@@ -124,7 +124,7 @@ int main(int argc, char **argv)
     }
     /*clientB end*/
 
-    printf("The Central server is up and running\n");
+    printf("The Central server is up and running.\n");
     while (1)
     {
         int recvA, recvB;
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("Receive: %s\n", bufA);
+            printf("The Central server received input=\"%s\" from the client using TCP over port %s.\n", bufA, TCPPORTA);
             /* connect to serverT*/
             client(UDPPORTT, bufA);
             client(UDPPORTS, bufA);
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("Receive: %s\n", bufB);
+            printf("The Central server received input=\"%s\" from the client using TCP over port %s.\n", bufB, TCPPORTB);
             /* connect to serverT*/
             client(UDPPORTT, bufB);
             client(UDPPORTS, bufB);

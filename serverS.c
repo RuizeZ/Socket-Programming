@@ -35,7 +35,7 @@ int main(int argc, char **argv)
     // inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
     // printf("%s\n", ipstr);
 
-    printf("The serverS is up and running using UDP on port %s\n", UDPPORT);
+    printf("The serverS is up and running using UDP on port %s.\n", UDPPORT);
     while (1)
     {
         /* Create a socket descriptor */
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
             return -2;
         }
-        printf("Receive: %s\n", buf);
+        printf("The ServerT received a request from Central to get the topology.\n");
         close(socketfd);
     }
 }

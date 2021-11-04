@@ -47,7 +47,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "socket() failed (port %s)\n", CENTRALPORT);
         return -2;
     }
-    printf("The client is up and running\n");
+    printf("The client is up and running.\n");
     if (connect(clientfd, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "connect() failed (port %s)\n", CENTRALPORT);
@@ -59,5 +59,5 @@ int main(int argc, char **argv)
     {
         fprintf(stderr, "send() failed (port %s)\n", CENTRALPORT);
     }
-    printf("Sent: %s\n", msg);
+    printf("The client sent %s to the Central server.\n", msg);
 }

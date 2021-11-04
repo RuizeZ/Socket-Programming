@@ -28,7 +28,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORT);
         return -2;
     }
-    printf("The serverP is up and running using UDP on port %s\n", UDPPORT);
+    printf("The serverP is up and running using UDP on port %s.\n", UDPPORT);
     while (1)
     {
         /* Create a socket descriptor */
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
             return -2;
         }
-        printf("Receive: %s\n", buf);
+        printf("The ServerP received a request from Central to get the topology.\n");
         close(socketfd);
     }
 }
