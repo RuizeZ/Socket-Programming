@@ -17,7 +17,7 @@
 #define LOCALHOST "127.0.0.1"
 #define MAXLEN 512
 
-int client(char *portnum, char *buf)
+int client(char *portnum, char *bufA, char *bufB)
 {
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
@@ -38,12 +38,27 @@ int client(char *portnum, char *buf)
         fprintf(stderr, "socket() failed (port %s)\n", portnum);
         return -2;
     }
-    if (sendto(socketfd, buf, strlen(buf), 0, res->ai_addr, res->ai_addrlen) < 0)
+    if (sendto(socketfd, bufA, strlen(bufA), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
         return -2;
     }
-    printf("sent: %s\n", buf);
+    printf("sent: %s\n", bufA);
+    if (sendto(socketfd, bufB, strlen(bufB), 0, res->ai_addr, res->ai_addrlen) < 0)
+    {
+        fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
+        return -2;
+    }
+    printf("sent: %s\n", bufB);
+    clientlen = sizeof(clientaddr);
+    char edges[MAXLEN][2][MAXLEN];
+    char buf[MAXLEN];
+    if (recvfrom(socketfd, buf, MAXLEN, 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+    {
+        fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
+        return -2;
+    }
+    printf("reveive:%s\n", buf);
     close(socketfd);
 }
 
@@ -128,6 +143,8 @@ int main(int argc, char **argv)
     while (1)
     {
         int recvA, recvB;
+        char bufA[MAXLEN] = "";
+        char bufB[MAXLEN] = "";
         /*accept for A*/
         if ((listenfdA = accept(socketfdA, (struct sockaddr *)&clientaddrA, &clientlenA)) < 0)
         {
@@ -143,7 +160,6 @@ int main(int argc, char **argv)
         // inet_ntop(res->ai_family, (struct sockaddr *)&clientaddr, ipstr, sizeof(ipstr));
         // printf("Get connected with %s\n", ipstr);
         /*receive A*/
-        char bufA[MAXLEN] = "";
         if (recvA = recv(listenfdA, bufA, MAXLEN - 1, 0) < 0)
         {
             fprintf(stderr, "listen() failed (port %s)\n", TCPPORTA);
@@ -153,13 +169,10 @@ int main(int argc, char **argv)
         {
             printf("The Central server received input=\"%s\" from the client using TCP over port %s.\n", bufA, TCPPORTA);
             /* connect to serverT*/
-            client(UDPPORTT, bufA);
-            client(UDPPORTS, bufA);
-            client(UDPPORTP, bufA);
-            close(listenfdA);
+            // client(UDPPORTS, bufA, bufB);
+            // client(UDPPORTP, bufA, bufB);
         }
         /*receive B*/
-        char bufB[MAXLEN] = "";
         if (recvB = recv(listenfdB, bufB, MAXLEN - 1, 0) < 0)
         {
             fprintf(stderr, "listen() failed (port %s)\n", TCPPORTB);
@@ -169,10 +182,11 @@ int main(int argc, char **argv)
         {
             printf("The Central server received input=\"%s\" from the client using TCP over port %s.\n", bufB, TCPPORTB);
             /* connect to serverT*/
-            client(UDPPORTT, bufB);
-            client(UDPPORTS, bufB);
-            client(UDPPORTP, bufB);
+            client(UDPPORTT, bufA, bufB);
+            client(UDPPORTS, bufA, bufB);
+            client(UDPPORTP, bufA, bufB);
             memset(bufB, 0, sizeof(bufB));
+            close(listenfdA);
             close(listenfdB);
         }
     }
