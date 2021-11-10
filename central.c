@@ -53,12 +53,24 @@ int client(char *portnum, char *bufA, char *bufB)
     clientlen = sizeof(clientaddr);
     char edges[MAXLEN][2][MAXLEN];
     char buf[MAXLEN];
-    if (recvfrom(socketfd, buf, MAXLEN, 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+    int i = 0;
+    while (1)
     {
-        fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
-        return -2;
+        if (recvfrom(socketfd, edges[i], sizeof(edges[i]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
+        {
+            fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
+            return -2;
+        }
+        if (strcmp(edges[i][0], "end") == 0)
+        {
+            break;
+        }
+
+        printf("receive %s, %s\n", edges[i][0], edges[i][1]);
+        i++;
     }
-    printf("reveive:%s\n", buf);
+    printf("finish reveive\n");
+
     close(socketfd);
 }
 
@@ -114,12 +126,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "getaddrinfo failed (port %s)\n", TCPPORTB);
         return -2;
     }
-    /* test the current IP */
-    // struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
-    // void *addr = &(ipv4->sin_addr);
-    // char ipstr[INET_ADDRSTRLEN];
-    // inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
-    // printf("%s\n", ipstr);
     /* Create a socket descriptor */
     if ((socketfdB = socket(resB->ai_family, resB->ai_socktype, resB->ai_protocol)) < 0)
     {
@@ -140,6 +146,8 @@ int main(int argc, char **argv)
     /*clientB end*/
 
     printf("The Central server is up and running.\n");
+
+    /*start listen*/
     while (1)
     {
         int recvA, recvB;
@@ -157,8 +165,10 @@ int main(int argc, char **argv)
             fprintf(stderr, "listen() failed (port %s)\n", TCPPORTB);
             return -2;
         }
+
         // inet_ntop(res->ai_family, (struct sockaddr *)&clientaddr, ipstr, sizeof(ipstr));
         // printf("Get connected with %s\n", ipstr);
+
         /*receive A*/
         if (recvA = recv(listenfdA, bufA, MAXLEN - 1, 0) < 0)
         {
@@ -168,10 +178,9 @@ int main(int argc, char **argv)
         else
         {
             printf("The Central server received input=\"%s\" from the client using TCP over port %s.\n", bufA, TCPPORTA);
-            /* connect to serverT*/
-            // client(UDPPORTS, bufA, bufB);
-            // client(UDPPORTP, bufA, bufB);
         }
+        /*end receive A*/
+
         /*receive B*/
         if (recvB = recv(listenfdB, bufB, MAXLEN - 1, 0) < 0)
         {
@@ -181,13 +190,16 @@ int main(int argc, char **argv)
         else
         {
             printf("The Central server received input=\"%s\" from the client using TCP over port %s.\n", bufB, TCPPORTB);
-            /* connect to serverT*/
-            client(UDPPORTT, bufA, bufB);
-            client(UDPPORTS, bufA, bufB);
-            client(UDPPORTP, bufA, bufB);
-            memset(bufB, 0, sizeof(bufB));
-            close(listenfdA);
-            close(listenfdB);
         }
+        /*end receive B*/
+
+        /*connect to serverT*/
+        client(UDPPORTT, bufA, bufB);
+        memset(bufA, 0, sizeof(bufA));
+        memset(bufB, 0, sizeof(bufB));
+        close(listenfdA);
+        close(listenfdB);
+        /* end connect to serverT*/
     }
+    /*end listen*/
 }

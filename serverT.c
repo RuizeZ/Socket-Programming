@@ -13,9 +13,9 @@
 #define LOCALHOST "127.0.0.1"
 #define MAXLEN 512
 void bfs(char edges[][2][MAXLEN], int edgeInx, char names[][MAXLEN], char queue[][MAXLEN], int queueSize, int *visited, int visitedNum, int queueInx);
-int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN]);
+int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN], int *visited);
 /*find all edges in the file*/
-int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN])
+int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN], int *visited)
 {
     int edgeInx = 0;
     FILE *fp;
@@ -91,21 +91,20 @@ int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN])
 
     /*find all edges that are associated with input name*/
     char queue[edgeInx * 2][MAXLEN];
-    int visited[edgeInx];
     memset(visited, 0, sizeof(visited));
     int queueSize = 0, queueInx = 0, visitedNum = 0;
     strcpy(queue[0], names[0]);
     queueSize++;
     bfs(edges, edgeInx, names, queue, queueSize, visited, visitedNum, queueInx);
-    for (int i = 0; i < edgeInx; i++)
-    {
-        if (visited[i] == 0)
-        {
-            strcpy(edges[i][0], "");
-            strcpy(edges[i][1], "");
-        }
-        printf("%d\n", visited[i]);
-    }
+    // for (int i = 0; i < edgeInx; i++)
+    // {
+    //     if (visited[i] == 0)
+    //     {
+    //         strcpy(edges[i][0], "");
+    //         strcpy(edges[i][1], "");
+    //     }
+    //     printf("%d\n", visited[i]);
+    // }
     return edgeInx;
 }
 
@@ -156,13 +155,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORT);
         return -2;
     }
-    /* test the current IP */
-    // struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
-    // void *addr = &(ipv4->sin_addr);
-    // char ipstr[INET_ADDRSTRLEN];
-    // inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
-    // printf("%s\n", ipstr);
     printf("The serverT is up and running using UDP on port %s.\n", UDPPORT);
+
     while (1)
     {
         printf("Create a socket descriptor\n");
@@ -183,6 +177,7 @@ int main(int argc, char **argv)
 
         printf("recvfrom the client\n");
         int namesInx = 0;
+        /*reveive names*/
         while (namesInx != 2)
         {
             char buf[MAXLEN] = "";
@@ -198,16 +193,29 @@ int main(int argc, char **argv)
         }
         printf("find all edges\n");
         char edges[MAXLEN][2][MAXLEN];
-        int edgeInx = findEdge(names, edges);
+        int visited[MAXLEN];
+        int edgeInx = findEdge(names, edges, visited);
         for (int i = 0; i < edgeInx; i++)
         {
-            printf("%s, %s\n", edges[i][0], edges[i][1]);
+            if (visited[i])
+            {
+                if (sendto(socketfd, edges[i], sizeof(edges[i]), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
+                {
+                    fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
+                    return -2;
+                }
+                printf("sent %s, %s\n", edges[i][0], edges[i][1]);
+            }
         }
-        if (sendto(socketfd, "edges", MAXLEN, 0, res->ai_addr, res->ai_addrlen) < 0)
+        char end[] = "end";
+        if (sendto(socketfd, end, sizeof(end), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
         {
             fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
             return -2;
         }
+        printf("sent end\n");
+        printf("size of %ld\n", sizeof(edges));
+
         printf("sent: edges\n");
 
         close(socketfd);
