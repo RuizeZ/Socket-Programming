@@ -12,9 +12,81 @@
 #define UDPPORT "22069"
 #define LOCALHOST "127.0.0.1"
 #define MAXLEN 512
-
+int findscore()
+{
+    int nextC;
+    int isName = 1;
+    char name[MAXLEN] = "", score[MAXLEN] = "";
+    char scores[MAXLEN][2][MAXLEN];
+    int scoresSize = 0;
+    char prevChar = ' ';
+    FILE *fp;
+    fp = fopen("scores.txt", "r");
+    /*find all score in the file, put them in the list scores[][]*/
+    do
+    {
+        nextC = getc(fp);
+        if (nextC != EOF)
+        {
+            if ((char)nextC != '\n')
+            {
+                if (nextC != ' ')
+                {
+                    char newChar = nextC;
+                    if (isName)
+                    {
+                        /*add current char to the string*/
+                        strncat(name, &(newChar), 1);
+                    }
+                    else
+                    {
+                        /*add current char to the string*/
+                        strncat(score, &(newChar), 1);
+                    }
+                }
+                else
+                {
+                    /*start to read score*/
+                    isName = 0;
+                }
+            }
+            else
+            {
+                /*if \n means starting next line, increasing edgeInx so that use a new string to store next line*/
+                strcpy(scores[scoresSize][0], name);
+                strcpy(scores[scoresSize][1], score);
+                scoresSize++;
+                memset(name, 0, sizeof(name));
+                memset(score, 0, sizeof(score));
+                isName = 1;
+            }
+        }
+        /*reach the end of the file*/
+        else
+        {
+            if (prevChar != '\n')
+            {
+                /*there is no empty line in the file, decrease the edgeInx*/
+                strcpy(scores[scoresSize][0], name);
+                strcpy(scores[scoresSize][1], score);
+                scoresSize++;
+                memset(name, 0, sizeof(name));
+                memset(score, 0, sizeof(score));
+                isName = 1;
+            }
+        }
+        /*revord the current char as prev in order to check empty line at the end*/
+        prevChar = (char)nextC;
+    } while (nextC != EOF);
+    /*end of reading file*/
+    for (int i = 0; i < scoresSize; i++)
+    {
+        printf("read %s, %s\n", scores[i][0], scores[i][1]);
+    }
+}
 int main(int argc, char **argv)
 {
+    findscore();
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
     struct addrinfo *res;
@@ -28,13 +100,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORT);
         return -2;
     }
-    /* test the current IP */
-    // struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
-    // void *addr = &(ipv4->sin_addr);
-    // char ipstr[INET_ADDRSTRLEN];
-    // inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
-    // printf("%s\n", ipstr);
-
     printf("The serverS is up and running using UDP on port %s.\n", UDPPORT);
     while (1)
     {
@@ -50,14 +115,26 @@ int main(int argc, char **argv)
             fprintf(stderr, "bind() failed (port %s)\n", UDPPORT);
             return -2;
         }
+        /*receive data from client*/
         clientlen = sizeof(clientaddr);
-        char buf[MAXLEN] = "";
-        if (recvfrom(socketfd, buf, MAXLEN - 1, 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+        char edges[MAXLEN][2][MAXLEN];
+        int i = 0;
+        while (1)
         {
-            fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
-            return -2;
+            if (recvfrom(socketfd, edges[i], sizeof(edges[i]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+            {
+                fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
+                return -2;
+            }
+            if (strcmp(edges[i][0], "end") == 0)
+            {
+                break;
+            }
+            printf("receive %s, %s\n", edges[i][0], edges[i][1]);
+            i++;
         }
-        printf("The ServerT received a request from Central to get the topology.\n");
+        printf("The ServerS received a request from Central to get the topology.\n");
+        /*end receive data*/
         close(socketfd);
     }
 }

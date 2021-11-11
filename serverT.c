@@ -12,8 +12,10 @@
 #define UDPPORT "21069"
 #define LOCALHOST "127.0.0.1"
 #define MAXLEN 512
+
 void bfs(char edges[][2][MAXLEN], int edgeInx, char names[][MAXLEN], char queue[][MAXLEN], int queueSize, int *visited, int visitedNum, int queueInx);
 int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN], int *visited);
+
 /*find all edges in the file*/
 int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN], int *visited)
 {
@@ -83,12 +85,6 @@ int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN], int *visited)
     } while (nextC != EOF);
     /*end of reading file*/
 
-    printf("%d\n", edgeInx);
-    for (int i = 0; i < edgeInx; i++)
-    {
-        printf("%s, %s\n", edges[i][0], edges[i][1]);
-    }
-
     /*find all edges that are associated with input name*/
     char queue[edgeInx * 2][MAXLEN];
     memset(visited, 0, sizeof(visited));
@@ -96,15 +92,6 @@ int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN], int *visited)
     strcpy(queue[0], names[0]);
     queueSize++;
     bfs(edges, edgeInx, names, queue, queueSize, visited, visitedNum, queueInx);
-    // for (int i = 0; i < edgeInx; i++)
-    // {
-    //     if (visited[i] == 0)
-    //     {
-    //         strcpy(edges[i][0], "");
-    //         strcpy(edges[i][1], "");
-    //     }
-    //     printf("%d\n", visited[i]);
-    // }
     return edgeInx;
 }
 
@@ -116,7 +103,7 @@ void bfs(char edges[][2][MAXLEN], int edgeInx, char names[][MAXLEN], char queue[
     {
         char currName[MAXLEN];
         strcpy(currName, *(queue + queueInx));
-        printf("current name is %s\n", currName);
+        // printf("current name is %s\n", currName);
         queueInx++;
         for (int i = 0; i < edgeInx; i++)
         {
@@ -159,14 +146,14 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        printf("Create a socket descriptor\n");
+        // printf("Create a socket descriptor\n");
         /* Create a socket descriptor */
         if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
         {
             fprintf(stderr, "socket() failed (port %s)\n", UDPPORT);
             return -2;
         }
-        printf("Bind the descriptor to the port\n");
+        // printf("Bind the descriptor to the port\n");
         /* Bind the descriptor to the port */
         if (bind(socketfd, res->ai_addr, res->ai_addrlen) < 0)
         {
@@ -175,7 +162,7 @@ int main(int argc, char **argv)
         }
         clientlen = sizeof(clientaddr);
 
-        printf("recvfrom the client\n");
+        // printf("recvfrom the client\n");
         int namesInx = 0;
         /*reveive names*/
         while (namesInx != 2)
@@ -187,11 +174,11 @@ int main(int argc, char **argv)
                 return -2;
             }
             strcpy(names[namesInx], buf);
-            printf("name is: %s\n", names[namesInx]);
+            // printf("name is: %s\n", names[namesInx]);
             namesInx++;
-            printf("The ServerT received a request from Central to get the topology.\n");
         }
-        printf("find all edges\n");
+        printf("The ServerT received a request from Central to get the topology.\n");
+        // printf("find all edges\n");
         char edges[MAXLEN][2][MAXLEN];
         int visited[MAXLEN];
         int edgeInx = findEdge(names, edges, visited);
@@ -204,7 +191,7 @@ int main(int argc, char **argv)
                     fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
                     return -2;
                 }
-                printf("sent %s, %s\n", edges[i][0], edges[i][1]);
+                // printf("sent %s, %s\n", edges[i][0], edges[i][1]);
             }
         }
         char end[] = "end";
@@ -213,11 +200,8 @@ int main(int argc, char **argv)
             fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
             return -2;
         }
-        printf("sent end\n");
-        printf("size of %ld\n", sizeof(edges));
-
-        printf("sent: edges\n");
-
+        // printf("sent end\n");
+        printf("The ServerT finished sending the topology to Central.\n");
         close(socketfd);
     }
 }

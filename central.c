@@ -17,7 +17,10 @@
 #define LOCALHOST "127.0.0.1"
 #define MAXLEN 512
 
-int client(char *portnum, char *bufA, char *bufB)
+int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN]);
+int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx);
+
+int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
 {
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
@@ -38,20 +41,90 @@ int client(char *portnum, char *bufA, char *bufB)
         fprintf(stderr, "socket() failed (port %s)\n", portnum);
         return -2;
     }
+    /*send data to serverT*/
     if (sendto(socketfd, bufA, strlen(bufA), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
         return -2;
     }
-    printf("sent: %s\n", bufA);
+    // printf("sent: %s\n", bufA);
     if (sendto(socketfd, bufB, strlen(bufB), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
         return -2;
     }
-    printf("sent: %s\n", bufB);
+    printf("The Central server sent a request to Backend-Server T.\n");
+    /*end send data to serverT*/
+    /*receive data from serverT*/
     clientlen = sizeof(clientaddr);
-    char edges[MAXLEN][2][MAXLEN];
+    int i = 0;
+    while (1)
+    {
+        if (recvfrom(socketfd, edges[i], sizeof(edges[i]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
+        {
+            fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
+            return -2;
+        }
+        if (strcmp(edges[i][0], "end") == 0)
+        {
+            break;
+        }
+
+        // printf("receive %s, %s\n", edges[i][0], edges[i][1]);
+        i++;
+    }
+    if (i == 1)
+    {
+        printf("empty path\n");
+    }
+
+    printf("The Central server received information from Backend-Server T using UDP over port 24096.\n");
+    /*end receive data from serverT*/
+    close(socketfd);
+    return i;
+}
+
+int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx)
+{
+    struct addrinfo hints;
+    struct sockaddr_storage clientaddr;
+    struct addrinfo *res;
+    int rc, socketfd;
+    socklen_t clientlen;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    if ((rc = getaddrinfo(LOCALHOST, portnum, &hints, &res)) != 0)
+    {
+        fprintf(stderr, "getaddrinfo failed (port %s)\n", portnum);
+        return -2;
+    }
+    /* Create a socket descriptor */
+    if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+    {
+        fprintf(stderr, "socket() failed (port %s)\n", portnum);
+        return -2;
+    }
+    /*send edges to server S*/
+    for (int i = 0; i < edgeInx; i++)
+    {
+        if (sendto(socketfd, edges[i], sizeof(edges[i]), 0, res->ai_addr, res->ai_addrlen) < 0)
+        {
+            fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+            return -2;
+        }
+        printf("sent %s, %s\n", edges[i][0], edges[i][1]);
+    }
+    char end[] = "end";
+    if (sendto(socketfd, end, sizeof(end), 0, res->ai_addr, res->ai_addrlen) < 0)
+    {
+        fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+        return -2;
+    }
+    printf("The Central server sent a request to Backend-Server S.\n");
+    /*end send edges to server S*/
+
+    clientlen = sizeof(clientaddr);
     char buf[MAXLEN];
     int i = 0;
     while (1)
@@ -66,12 +139,18 @@ int client(char *portnum, char *bufA, char *bufB)
             break;
         }
 
-        printf("receive %s, %s\n", edges[i][0], edges[i][1]);
+        // printf("receive %s, %s\n", edges[i][0], edges[i][1]);
         i++;
     }
-    printf("finish reveive\n");
+    if (i == 1)
+    {
+        printf("empty path\n");
+    }
+
+    printf("The Central server received information from Backend-Server T using UDP over port 24096.\n");
 
     close(socketfd);
+    return i;
 }
 
 int main(int argc, char **argv)
@@ -194,7 +273,13 @@ int main(int argc, char **argv)
         /*end receive B*/
 
         /*connect to serverT*/
-        client(UDPPORTT, bufA, bufB);
+        char edges[MAXLEN][2][MAXLEN];
+        int edgeInx = clientT(UDPPORTT, bufA, bufB, edges);
+        for (int i = 0; i < edgeInx; i++)
+        {
+            printf("receive %s, %s\n", edges[i][0], edges[i][1]);
+        }
+        clientS(UDPPORTS, edges, edgeInx);
         memset(bufA, 0, sizeof(bufA));
         memset(bufB, 0, sizeof(bufB));
         close(listenfdA);
