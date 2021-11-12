@@ -18,7 +18,7 @@
 #define MAXLEN 512
 
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN]);
-int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx);
+int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN]);
 
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
 {
@@ -56,7 +56,6 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
     printf("The Central server sent a request to Backend-Server T.\n");
     /*end send data to serverT*/
     /*receive data from serverT*/
-    clientlen = sizeof(clientaddr);
     int i = 0;
     while (1)
     {
@@ -73,7 +72,7 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
         // printf("receive %s, %s\n", edges[i][0], edges[i][1]);
         i++;
     }
-    if (i == 1)
+    if (i == 0)
     {
         printf("empty path\n");
     }
@@ -84,7 +83,7 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
     return i;
 }
 
-int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx)
+int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN])
 {
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
@@ -123,34 +122,32 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx)
     }
     printf("The Central server sent a request to Backend-Server S.\n");
     /*end send edges to server S*/
-
-    clientlen = sizeof(clientaddr);
-    char buf[MAXLEN];
-    int i = 0;
+    /*receive data from server S*/
+    int scoresneededSize = 0;
     while (1)
     {
-        if (recvfrom(socketfd, edges[i], sizeof(edges[i]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
+        if (recvfrom(socketfd, scoresneeded[scoresneededSize], sizeof(scoresneeded[scoresneededSize]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
         {
             fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
             return -2;
         }
-        if (strcmp(edges[i][0], "end") == 0)
+        if (strcmp(scoresneeded[scoresneededSize][0], "end") == 0)
         {
             break;
         }
 
         // printf("receive %s, %s\n", edges[i][0], edges[i][1]);
-        i++;
+        scoresneededSize++;
     }
-    if (i == 1)
+    if (scoresneededSize == 0)
     {
         printf("empty path\n");
     }
 
-    printf("The Central server received information from Backend-Server T using UDP over port 24096.\n");
+    printf("The Central server received information from Backend-Server S using UDP over port 24096.\n");
 
     close(socketfd);
-    return i;
+    return scoresneededSize;
 }
 
 int main(int argc, char **argv)
@@ -279,7 +276,14 @@ int main(int argc, char **argv)
         {
             printf("receive %s, %s\n", edges[i][0], edges[i][1]);
         }
-        clientS(UDPPORTS, edges, edgeInx);
+        /*connect to serverS*/
+        char scoresneeded[MAXLEN][2][MAXLEN];
+        int scoresneededSize = clientS(UDPPORTS, edges, edgeInx, scoresneeded);
+        for (int i = 0; i < scoresneededSize; i++)
+        {
+            printf("receive %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
+        }
+        /*end connect to serverS*/
         memset(bufA, 0, sizeof(bufA));
         memset(bufB, 0, sizeof(bufB));
         close(listenfdA);

@@ -12,7 +12,7 @@
 #define UDPPORT "22069"
 #define LOCALHOST "127.0.0.1"
 #define MAXLEN 512
-int findscore()
+int findscore(char edges[][2][MAXLEN], char scoresneeded[][2][MAXLEN], int edgeInx)
 {
     int nextC;
     int isName = 1;
@@ -79,14 +79,66 @@ int findscore()
         prevChar = (char)nextC;
     } while (nextC != EOF);
     /*end of reading file*/
-    for (int i = 0; i < scoresSize; i++)
+    // for (int i = 0; i < scoresSize; i++)
+    // {
+    //     printf("read %s, %s\n", scores[i][0], scores[i][1]);
+    // }
+    /*find all scores needed*/
+    int selected[scoresSize];
+    int scoresneededSize = 0;
+    int seletedNum = 0;
+    memset(selected, 0, sizeof(selected));
+    for (int i = 0; i < edgeInx; i++)
     {
-        printf("read %s, %s\n", scores[i][0], scores[i][1]);
+        int breakNum = 0;
+        for (int j = 0; i < scoresSize; j++)
+        {
+            /*find all score needed for each name*/
+            /*if find first name*/
+            if (strcmp(scores[j][0], edges[i][0]) == 0)
+            {
+                if (selected[j] == 0)
+                { /*copy this name and score to scoresneeded array*/
+                    strcpy(scoresneeded[scoresneededSize][0], scores[j][0]);
+                    strcpy(scoresneeded[scoresneededSize][1], scores[j][1]);
+                    selected[j] = 1;
+                    seletedNum++;
+                    scoresneededSize++;
+                }
+                breakNum++;
+            }
+            if (strcmp(scores[j][0], edges[i][1]) == 0)
+            {
+                if (selected[j] == 0)
+                { /*copy this name and score to scoresneeded array*/
+                    strcpy(scoresneeded[scoresneededSize][0], scores[j][0]);
+                    strcpy(scoresneeded[scoresneededSize][1], scores[j][1]);
+                    selected[j] = 1;
+                    seletedNum++;
+                    scoresneededSize++;
+                }
+                breakNum++;
+            }
+            if (breakNum == 2)
+            {
+                break;
+            }
+        }
+        if (seletedNum == scoresSize)
+        {
+            break;
+        }
     }
+    /*end find all scores needed*/
+
+    // for (int i = 0; i < scoresneededSize; i++)
+    // {
+    //     printf("selected %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
+    // }
+    return scoresneededSize;
 }
 int main(int argc, char **argv)
 {
-    findscore();
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
     struct addrinfo *res;
@@ -118,23 +170,44 @@ int main(int argc, char **argv)
         /*receive data from client*/
         clientlen = sizeof(clientaddr);
         char edges[MAXLEN][2][MAXLEN];
-        int i = 0;
+        int edgeInx = 0;
         while (1)
         {
-            if (recvfrom(socketfd, edges[i], sizeof(edges[i]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+            if (recvfrom(socketfd, edges[edgeInx], sizeof(edges[edgeInx]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
             {
                 fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
                 return -2;
             }
-            if (strcmp(edges[i][0], "end") == 0)
+            if (strcmp(edges[edgeInx][0], "end") == 0)
             {
                 break;
             }
-            printf("receive %s, %s\n", edges[i][0], edges[i][1]);
-            i++;
+            printf("receive %s, %s\n", edges[edgeInx][0], edges[edgeInx][1]);
+            edgeInx++;
         }
         printf("The ServerS received a request from Central to get the topology.\n");
         /*end receive data*/
+        /*find all needed score for names*/
+        char scoresneeded[MAXLEN][2][MAXLEN];
+        int scoresneededSize = findscore(edges, scoresneeded, edgeInx);
+        /*end find all needed score for names*/
+        /*send all edges back to central*/
+        for (int i = 0; i < scoresneededSize; i++)
+        {
+            if (sendto(socketfd, scoresneeded[i], sizeof(scoresneeded[i]), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
+                return -2;
+            }
+        }
+        char end[] = "end";
+        if (sendto(socketfd, end, sizeof(end), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
+        {
+            fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
+            return -2;
+        }
+        /*end send all edges back to central*/
+        printf("The ServerS finished sending the scores to Central.\n");
         close(socketfd);
     }
 }

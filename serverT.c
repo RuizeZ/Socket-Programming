@@ -179,9 +179,12 @@ int main(int argc, char **argv)
         }
         printf("The ServerT received a request from Central to get the topology.\n");
         // printf("find all edges\n");
+        /*find all edges*/
         char edges[MAXLEN][2][MAXLEN];
         int visited[MAXLEN];
         int edgeInx = findEdge(names, edges, visited);
+        /*end find all edges*/
+        /*send all edges back to central*/
         for (int i = 0; i < edgeInx; i++)
         {
             if (visited[i])
@@ -200,7 +203,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
             return -2;
         }
-        // printf("sent end\n");
+        /*end send all edges back to central*/
         printf("The ServerT finished sending the topology to Central.\n");
         close(socketfd);
     }
