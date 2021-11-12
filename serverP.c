@@ -43,7 +43,45 @@ int main(int argc, char **argv)
             fprintf(stderr, "bind() failed (port %s)\n", UDPPORT);
             return -2;
         }
+        /*receive edges from client*/
         clientlen = sizeof(clientaddr);
+        char edges[MAXLEN][2][MAXLEN];
+        int edgeInx = 0;
+        while (1)
+        {
+            if (recvfrom(socketfd, edges[edgeInx], sizeof(edges[edgeInx]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+            {
+                fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
+                return -2;
+            }
+            if (strcmp(edges[edgeInx][0], "end") == 0)
+            {
+                break;
+            }
+            printf("receive %s, %s\n", edges[edgeInx][0], edges[edgeInx][1]);
+            edgeInx++;
+        }
+        /*end receive edges*/
+
+        /*receive scores from client*/
+        char scoresneeded[MAXLEN][2][MAXLEN];
+        int scoresneededsize = 0;
+        while (1)
+        {
+            if (recvfrom(socketfd, scoresneeded[scoresneededsize], sizeof(scoresneeded[scoresneededsize]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+            {
+                fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
+                return -2;
+            }
+            if (strcmp(scoresneeded[scoresneededsize][0], "end") == 0)
+            {
+                break;
+            }
+            printf("receive %s, %s\n", scoresneeded[scoresneededsize][0], scoresneeded[scoresneededsize][1]);
+            scoresneededsize++;
+        }
+        /*end receive scores from client*/
+
         // inet_ntop(res->ai_family, (struct sockaddr *)&clientaddr, ipstr, sizeof(ipstr));
         // printf("Get connected with %s\n", ipstr);
         char buf[MAXLEN] = "";

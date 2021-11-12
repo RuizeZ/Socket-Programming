@@ -19,6 +19,7 @@
 
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN]);
 int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN]);
+int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize);
 
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
 {
@@ -150,6 +151,90 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     return scoresneededSize;
 }
 
+int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize)
+{
+    struct addrinfo hints;
+    struct sockaddr_storage clientaddr;
+    struct addrinfo *res;
+    int rc, socketfd;
+    socklen_t clientlen;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    if ((rc = getaddrinfo(LOCALHOST, portnum, &hints, &res)) != 0)
+    {
+        fprintf(stderr, "getaddrinfo failed (port %s)\n", portnum);
+        return -2;
+    }
+    /* Create a socket descriptor */
+    if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+    {
+        fprintf(stderr, "socket() failed (port %s)\n", portnum);
+        return -2;
+    }
+    /*send edges to server P*/
+    for (int i = 0; i < edgeInx; i++)
+    {
+        if (sendto(socketfd, edges[i], sizeof(edges[i]), 0, res->ai_addr, res->ai_addrlen) < 0)
+        {
+            fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+            return -2;
+        }
+        printf("sent %s, %s\n", edges[i][0], edges[i][1]);
+    }
+    char end[] = "end";
+    if (sendto(socketfd, end, sizeof(end), 0, res->ai_addr, res->ai_addrlen) < 0)
+    {
+        fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+        return -2;
+    }
+    /*end send edges to server P*/
+    /*send scores to server P*/
+    for (int i = 0; i < scoresneededSize; i++)
+    {
+        if (sendto(socketfd, scoresneeded[i], sizeof(scoresneeded[i]), 0, res->ai_addr, res->ai_addrlen) < 0)
+        {
+            fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+            return -2;
+        }
+        printf("sent %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
+    }
+    if (sendto(socketfd, end, sizeof(end), 0, res->ai_addr, res->ai_addrlen) < 0)
+    {
+        fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+        return -2;
+    }
+    /*end send edges to server P*/
+    printf("The Central server sent a processing request to Backend-Server P.\n");
+    /*end send edges to server S*/
+
+    /*receive data from server P*/
+    // int scoresneededSize = 0;
+    // while (1)
+    // {
+    //     if (recvfrom(socketfd, scoresneeded[scoresneededSize], sizeof(scoresneeded[scoresneededSize]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
+    //     {
+    //         fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
+    //         return -2;
+    //     }
+    //     if (strcmp(scoresneeded[scoresneededSize][0], "end") == 0)
+    //     {
+    //         break;
+    //     }
+
+    //     // printf("receive %s, %s\n", edges[i][0], edges[i][1]);
+    //     scoresneededSize++;
+    // }
+    // if (scoresneededSize == 0)
+    // {
+    //     printf("empty path\n");
+    // }
+
+    // printf("The Central server received information from Backend-Server S using UDP over port 24096.\n");
+
+    close(socketfd);
+    return scoresneededSize;
+}
 int main(int argc, char **argv)
 {
     /*clientA*/
@@ -284,6 +369,11 @@ int main(int argc, char **argv)
             printf("receive %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
         }
         /*end connect to serverS*/
+
+        /*connect to serverP*/
+        clientP(UDPPORTP, edges, edgeInx, scoresneeded, scoresneededSize);
+        /*end connect to serverP*/
+
         memset(bufA, 0, sizeof(bufA));
         memset(bufB, 0, sizeof(bufB));
         close(listenfdA);
