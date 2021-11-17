@@ -19,7 +19,7 @@
 
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN]);
 int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN]);
-int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize);
+int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize, char *bufA, char *bufB);
 
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
 {
@@ -151,7 +151,7 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     return scoresneededSize;
 }
 
-int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize)
+int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize, char *bufA, char *bufB)
 {
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
@@ -205,8 +205,22 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
         return -2;
     }
     /*end send edges to server P*/
+    /*send input names to server P*/
+    if (sendto(socketfd, bufA, sizeof(bufA), 0, res->ai_addr, res->ai_addrlen) < 0)
+    {
+        fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+        return -2;
+    }
+    printf("sent %s\n", bufA);
+    if (sendto(socketfd, bufB, sizeof(bufB), 0, res->ai_addr, res->ai_addrlen) < 0)
+    {
+        fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+        return -2;
+    }
+    printf("sent %s\n", bufB);
+    /*end send input names to server P*/
+
     printf("The Central server sent a processing request to Backend-Server P.\n");
-    /*end send edges to server S*/
 
     /*receive data from server P*/
     // int scoresneededSize = 0;
@@ -237,6 +251,8 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
 }
 int main(int argc, char **argv)
 {
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
     /*clientA*/
     struct addrinfo hintsA;
     struct sockaddr_storage clientaddrA;
@@ -269,6 +285,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "listen() failed (port %s)\n", TCPPORTA);
         return -2;
     }
+
+    if (getsockname(socketfdA, (struct sockaddr *)&sin, &len) == -1)
+        perror("getsockname");
+    else
+        printf("port number %d\n", ntohs(sin.sin_port));
     /*clientA end*/
 
     /*clientB*/
@@ -287,6 +308,12 @@ int main(int argc, char **argv)
         fprintf(stderr, "getaddrinfo failed (port %s)\n", TCPPORTB);
         return -2;
     }
+    /* test the current IP */
+    struct sockaddr_in *ipv4 = (struct sockaddr_in *)resA->ai_addr;
+    void *addr = &(ipv4->sin_addr);
+    char ipstr[INET_ADDRSTRLEN];
+    inet_ntop(resA->ai_family, addr, ipstr, sizeof(ipstr));
+    printf("%s\n", ipstr);
     /* Create a socket descriptor */
     if ((socketfdB = socket(resB->ai_family, resB->ai_socktype, resB->ai_protocol)) < 0)
     {
@@ -304,6 +331,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "listen() failed (port %s)\n", TCPPORTB);
         return -2;
     }
+    if (getsockname(socketfdB, (struct sockaddr *)&sin, &len) == -1)
+        perror("getsockname");
+    else
+        printf("port number %d\n", ntohs(sin.sin_port));
     /*clientB end*/
 
     printf("The Central server is up and running.\n");
@@ -371,7 +402,7 @@ int main(int argc, char **argv)
         /*end connect to serverS*/
 
         /*connect to serverP*/
-        clientP(UDPPORTP, edges, edgeInx, scoresneeded, scoresneededSize);
+        clientP(UDPPORTP, edges, edgeInx, scoresneeded, scoresneededSize, bufA, bufB);
         /*end connect to serverP*/
 
         memset(bufA, 0, sizeof(bufA));
