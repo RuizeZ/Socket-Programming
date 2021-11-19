@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <math.h>
+#include <float.h>
 #define UDPPORT "23069"
 #define LOCALHOST "127.0.0.1"
 #define MAXLEN 512
@@ -36,10 +37,11 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
 {
     char queue[edgeInx * 2][MAXLEN];
     int visited[scoresneededsize];
+    memset(visited, 0, sizeof(visited));
     int queueSize = 0, queueInx = 0, visitedNum = 0;
     strcpy(queue[0], inputname1);
     queueSize++;
-    /*create adjacency matrix*/
+    /*Create adjacency matrix adj[ ][ ]. If i and j are connected, adj[i][j] = adj[j][i] = 1, otherwise, 0*/
     int adj[scoresneededsize][scoresneededsize];
     /*set all to 0*/
     for (int i = 0; i < scoresneededsize; i++)
@@ -50,6 +52,7 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
         }
     }
     /*end set all to 0*/
+    /*If i and j are connected, adj[i][j] = adj[j][i] = 1, otherwise, 0*/
     for (int i = 0; i < edgeInx; i++)
     {
         char name1[MAXLEN], name2[MAXLEN];
@@ -68,6 +71,7 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
         adj[name2index][name1index] = 1;
     }
     /*end create adjacency matrix*/
+
     // for (int i = 0; i < scoresneededsize; i++)
     // {
     //     for (int j = 0; j < scoresneededsize; j++)
@@ -80,8 +84,26 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
     /*Create cost matrix cost[ ][ ] from adjacency matrix adj[ ][ ]. cost[i][j] is the cost of going from vertex i to vertex j.
     If there is no edge between vertices i and j then cost[i][j] is infinity.*/
     double cost[scoresneededsize][scoresneededsize];
+    int startnode = -1;
+    char startname[MAXLEN], endname[MAXLEN];
     for (int i = 0; i < scoresneededsize; i++)
     {
+        if (strcmp(scoresneeded[i][0], inputname1) == 0 || strcmp(scoresneeded[i][0], inputname2) == 0)
+        {
+            if (startnode == -1)
+            {
+                startnode = i;
+                strcpy(startname, scoresneeded[i][0]);
+                if (strcmp(startname, inputname1) == 0)
+                {
+                    strcpy(endname, inputname2);
+                }
+                else
+                {
+                    strcpy(endname, inputname1);
+                }
+            }
+        }
         for (int j = i; j < scoresneededsize; j++)
         {
             if (adj[i][j] == 1)
@@ -90,7 +112,7 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
                 double number2 = strtod(scoresneeded[j][1], NULL);
                 double distance = (fabs(number1 - number2)) / (fabs(number1 + number2));
                 // only keep to hundredth without rounding, might overflow
-                distance = (int)(distance * 100) / 100.0; 
+                // distance = (int)(distance * 100) / 100.0;
                 cost[i][j] = distance;
                 cost[j][i] = distance;
             }
@@ -102,41 +124,117 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
         }
     }
     /*end cost[][]*/
+
+    // for (int i = 0; i < scoresneededsize; i++)
+    // {
+    //     for (int j = 0; j < scoresneededsize; j++)
+    //     {
+    //         printf("%f ", cost[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+
+    /*create distance[i], distance[i] means the smallest cost from startnode to i*/
+    double distance[scoresneededsize];
     for (int i = 0; i < scoresneededsize; i++)
     {
-        for (int j = 0; j < scoresneededsize; j++)
-        {
-            printf("%f ", cost[i][j]);
+        if(cost[startnode][i] != -1){
+            distance[i] = cost[startnode][i];
+        }else{
+            distance[i] = DBL_MAX;
         }
-        printf("\n");
+        
     }
+    distance[startnode] = 0;
+    /*end create distance[i]*/
+    // for (int i = 0; i < scoresneededsize; i++)
+    // {
 
-    while (queueInx != queueSize)
+    //     printf("%f ", distance[i]);
+    // }
+    // printf("\n");
+
+    /*create prevnode[], prevneode[i] means the prevnode of ith node on the shortest path*/
+    int prevnode[scoresneededsize];
+    for (int i = 0; i < scoresneededsize; i++)
     {
-        char currName[MAXLEN];
-        strcpy(currName, *(queue + queueInx));
-        // printf("current name is %s\n", currName);
-        queueInx++;
-        for (int i = 0; i < edgeInx; i++)
+        if (distance[i] != -1)
         {
-            /*if current edge contains currName*/
-            if (strcmp(edges[i][0], currName) == 0 && !visited[i])
+            prevnode[i] = startnode;
+        }
+        else
+        {
+            prevnode[i] = -1;
+        }
+    }
+    /*end create prevnode[]*/
+
+    /*start Dijkstra*/
+    char finalpath[MAXLEN][MAXLEN];
+    int count = 0;
+    visited[startnode] = 1;
+    count++;
+    while (count != scoresneededsize)
+    {
+        /*find min value index i in the distance[], change visited[i]*/
+        double minValue = DBL_MAX;
+        int minInx = 0;
+        for (int i = 0; i < scoresneededsize; i++)
+        {
+            if (distance[i] > 0 && !visited[i])
             {
-                visited[i] = 1;
-                visitedNum++;
-                strcpy(queue[queueSize], edges[i][1]);
-                queueSize++;
-            }
-            else if (strcmp(edges[i][1], currName) == 0 && !visited[i])
-            {
-                visited[i] = 1;
-                visitedNum++;
-                strcpy(queue[queueSize], edges[i][0]);
-                queueSize++;
+                if (distance[i] < minValue)
+                {
+                    minValue = distance[i];
+                    minInx = i;
+                }
             }
         }
+        visited[minInx] = 1;
+        count++;
+        /*check if we find the endname*/
+        if (strcmp(scoresneeded[minInx][0], endname) == 0)
+        {
+            /*create finalPath*/
+            int finalpathInx = 0;
+            strcpy(finalpath[finalpathInx], endname);
+            finalpathInx++;
+            int nextnode = prevnode[minInx];
+            while (nextnode != startnode)
+            {
+                strcpy(finalpath[finalpathInx], scoresneeded[nextnode][0]);
+                finalpathInx++;
+                nextnode = prevnode[nextnode];
+            }
+            strcpy(finalpath[finalpathInx], startname);
+            finalpathInx++;
+            for (int i = 0; i < finalpathInx; i++)
+            {
+                printf("%s\n", finalpath[i]);
+            }
+            printf("min cost = %.2f\n", minValue);
+        }
+        /*end find min value index*/
+
+        /*update the distance[i] if a less distence is found from minInx to i*/
+        for (int i = 0; i < scoresneededsize; i++)
+        {
+            if (!visited[i])
+            {
+                if (cost[minInx][i] != -1)
+                {
+                    if (cost[minInx][i] + minValue < distance[i])
+                    {
+                        distance[i] = cost[minInx][i] + minValue;
+                        prevnode[i] = minInx;
+                    }
+                }
+            }
+        }
+        /*end update the distance[i]*/
     }
 }
+
 int main(int argc, char **argv)
 {
     struct addrinfo hints;
