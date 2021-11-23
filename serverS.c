@@ -142,6 +142,9 @@ int main(int argc, char **argv)
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
     struct addrinfo *res;
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    int portS = 0;
     int rc, socketfd;
     socklen_t clientlen;
     memset(&hints, 0, sizeof(hints));
@@ -152,7 +155,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORT);
         return -2;
     }
-    printf("The serverS is up and running using UDP on port %s.\n", UDPPORT);
     while (1)
     {
         /* Create a socket descriptor */
@@ -167,6 +169,16 @@ int main(int argc, char **argv)
             fprintf(stderr, "bind() failed (port %s)\n", UDPPORT);
             return -2;
         }
+        if (getsockname(socketfd, (struct sockaddr *)&sin, &len) == -1)
+        {
+            perror("getsockname");
+        }
+        else
+        {
+            portS = ntohs(sin.sin_port);
+        }
+        printf("The serverS is up and running using UDP on port %d.\n", portS);
+
         /*receive data from client*/
         clientlen = sizeof(clientaddr);
         char edges[MAXLEN][2][MAXLEN];
@@ -190,6 +202,7 @@ int main(int argc, char **argv)
         /*find all needed score for names*/
         char scoresneeded[MAXLEN][2][MAXLEN];
         int scoresneededSize = findscore(edges, scoresneeded, edgeInx);
+        printf("1\n");
         /*end find all needed score for names*/
         /*send all edges back to central*/
         for (int i = 0; i < scoresneededSize; i++)

@@ -4,3 +4,11 @@ Oliver 94
 Victor 8
 Rachit 129
 Hanieh 49
+q 3
+w 5
+e 7
+r 9
+t 4
+y 8
+u 4
+i 7

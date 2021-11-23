@@ -11,11 +11,11 @@
 #include <sys/wait.h>
 #include <math.h>
 #include <float.h>
-#define UDPPORT "23069"
+#define UDPPORP "23069"
 #define LOCALHOST "127.0.0.1"
 #define MAXLEN 512
 
-void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededsize, char *inputname1, char *inputname2);
+void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededsize, char *inputname1, char *inputname2, char finalpath[][MAXLEN], double *returnArray);
 int findnameindex(char scoresneeded[][2][MAXLEN], int scoresneededsize, char *name);
 
 /*find the index of the name in scoresneeded to build the adjacency matrix*/
@@ -33,7 +33,7 @@ int findnameindex(char scoresneeded[][2][MAXLEN], int scoresneededsize, char *na
 /*end findnameindex*/
 
 /*dijkstra algorithm */
-void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededsize, char *inputname1, char *inputname2)
+void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededsize, char *inputname1, char *inputname2, char finalpath[][MAXLEN], double *returnArray)
 {
     char queue[edgeInx * 2][MAXLEN];
     int visited[scoresneededsize];
@@ -138,21 +138,23 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
     double distance[scoresneededsize];
     for (int i = 0; i < scoresneededsize; i++)
     {
-        if(cost[startnode][i] != -1){
+        if (cost[startnode][i] != -1)
+        {
             distance[i] = cost[startnode][i];
-        }else{
+        }
+        else
+        {
             distance[i] = DBL_MAX;
         }
-        
     }
     distance[startnode] = 0;
     /*end create distance[i]*/
-    // for (int i = 0; i < scoresneededsize; i++)
-    // {
+    for (int i = 0; i < scoresneededsize; i++)
+    {
 
-    //     printf("%f ", distance[i]);
-    // }
-    // printf("\n");
+        printf("%f ", distance[i]);
+    }
+    printf("\n");
 
     /*create prevnode[], prevneode[i] means the prevnode of ith node on the shortest path*/
     int prevnode[scoresneededsize];
@@ -170,7 +172,6 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
     /*end create prevnode[]*/
 
     /*start Dijkstra*/
-    char finalpath[MAXLEN][MAXLEN];
     int count = 0;
     visited[startnode] = 1;
     count++;
@@ -208,11 +209,9 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
             }
             strcpy(finalpath[finalpathInx], startname);
             finalpathInx++;
-            for (int i = 0; i < finalpathInx; i++)
-            {
-                printf("%s\n", finalpath[i]);
-            }
-            printf("min cost = %.2f\n", minValue);
+            returnArray[0] = finalpathInx;
+            returnArray[1] = minValue;
+            return;
         }
         /*end find min value index*/
 
@@ -233,6 +232,7 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
         }
         /*end update the distance[i]*/
     }
+    printf("no path found\n");
 }
 
 int main(int argc, char **argv)
@@ -240,32 +240,42 @@ int main(int argc, char **argv)
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
     struct addrinfo *res;
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    int portP;
     int rc, socketfd;
     socklen_t clientlen;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
-    if ((rc = getaddrinfo(LOCALHOST, UDPPORT, &hints, &res)) != 0)
+    if ((rc = getaddrinfo(LOCALHOST, UDPPORP, &hints, &res)) != 0)
     {
-        fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORT);
+        fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORP);
         return -2;
     }
-
-    printf("The serverP is up and running using UDP on port %s.\n", UDPPORT);
     while (1)
     {
         /* Create a socket descriptor */
         if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
         {
-            fprintf(stderr, "socket() failed (port %s)\n", UDPPORT);
+            fprintf(stderr, "socket() failed (port %s)\n", UDPPORP);
             return -2;
         }
         /* Bind the descriptor to the port */
         if (bind(socketfd, res->ai_addr, res->ai_addrlen) < 0)
         {
-            fprintf(stderr, "bind() failed (port %s)\n", UDPPORT);
+            fprintf(stderr, "bind() failed (port %s)\n", UDPPORP);
             return -2;
         }
+        if (getsockname(socketfd, (struct sockaddr *)&sin, &len) == -1)
+        {
+            perror("getsockname");
+        }
+        else
+        {
+            portP = ntohs(sin.sin_port);
+        }
+        printf("The serverS is up and running using UDP on port %d.\n", portP);
         /*receive edges from client*/
         clientlen = sizeof(clientaddr);
         char edges[MAXLEN][2][MAXLEN];
@@ -274,7 +284,7 @@ int main(int argc, char **argv)
         {
             if (recvfrom(socketfd, edges[edgeInx], sizeof(edges[edgeInx]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
             {
-                fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
+                fprintf(stderr, "recvfrom() failed (port %d)\n", portP);
                 return -2;
             }
             if (strcmp(edges[edgeInx][0], "end") == 0)
@@ -293,7 +303,7 @@ int main(int argc, char **argv)
         {
             if (recvfrom(socketfd, scoresneeded[scoresneededsize], sizeof(scoresneeded[scoresneededsize]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
             {
-                fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
+                fprintf(stderr, "recvfrom() failed (port %d)\n", portP);
                 return -2;
             }
             if (strcmp(scoresneeded[scoresneededsize][0], "end") == 0)
@@ -310,24 +320,57 @@ int main(int argc, char **argv)
         char inputname2[MAXLEN];
         if (recvfrom(socketfd, inputname1, sizeof(inputname1), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
         {
-            fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
+            fprintf(stderr, "recvfrom() failed (port %d)\n", portP);
             return -2;
         }
         printf("receive name1 %s\n", inputname1);
         if (recvfrom(socketfd, inputname2, sizeof(inputname2), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
         {
-            fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
+            fprintf(stderr, "recvfrom() failed (port %d)\n", portP);
             return -2;
         }
         printf("receive name2 %s\n", inputname2);
         /*end receive input names from client*/
         printf("The ServerP received a request from Central to get the topology.\n");
-
-        dijkstra(edges, edgeInx, scoresneeded, scoresneededsize, inputname1, inputname2);
-
+        char finalpath[MAXLEN][MAXLEN];
+        memset(finalpath, 0, sizeof(finalpath));
+        double returnArray[2], minValue;
+        memset(returnArray, 0, sizeof(returnArray));
+        int finalpathInx;
+        dijkstra(edges, edgeInx, scoresneeded, scoresneededsize, inputname1, inputname2, finalpath, returnArray);
+        finalpathInx = returnArray[0];
+        minValue = returnArray[1];
+        for (int i = 0; i < finalpathInx; i++)
+        {
+            printf("%s\n", finalpath[i]);
+        }
+        printf("min cost = %.2f\n", minValue);
         // inet_ntop(res->ai_family, (struct sockaddr *)&clientaddr, ipstr, sizeof(ipstr));
         // printf("Get connected with %s\n", ipstr);
 
+        /*send all edges back to central*/
+        for (int i = 0; i < finalpathInx; i++)
+        {
+            if (sendto(socketfd, finalpath[i], sizeof(finalpath[i]), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %d)\n", portP);
+                return -2;
+            }
+            printf("sent %s\n", finalpath[i]);
+        }
+        char end[] = "end";
+        if (sendto(socketfd, end, sizeof(end), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
+        {
+            fprintf(stderr, "sendto() failed (port %d)\n", portP);
+            return -2;
+        }
+        if (sendto(socketfd, returnArray + 1, sizeof(returnArray + 1), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
+        {
+            fprintf(stderr, "sendto() failed (port %d)\n", portP);
+            return -2;
+        }
+        printf("sent %.2f\n", *(returnArray + 1));
+        /*end send all edges back to central*/
         close(socketfd);
     }
 }

@@ -131,6 +131,9 @@ int main(int argc, char **argv)
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
     struct addrinfo *res;
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    int portT;
     int rc, socketfd;
     char names[2][MAXLEN];
     socklen_t clientlen;
@@ -142,7 +145,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORT);
         return -2;
     }
-    printf("The serverT is up and running using UDP on port %s.\n", UDPPORT);
 
     while (1)
     {
@@ -160,6 +162,15 @@ int main(int argc, char **argv)
             fprintf(stderr, "bind() failed (port %s)\n", UDPPORT);
             return -2;
         }
+        if (getsockname(socketfd, (struct sockaddr *)&sin, &len) == -1)
+        {
+            perror("getsockname");
+        }
+        else
+        {
+            portT = ntohs(sin.sin_port);
+        }
+        printf("The serverS is up and running using UDP on port %d.\n", portT);
         clientlen = sizeof(clientaddr);
 
         // printf("recvfrom the client\n");

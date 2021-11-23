@@ -19,7 +19,7 @@
 
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN]);
 int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN]);
-int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize, char *bufA, char *bufB);
+int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize, char *bufA, char *bufB, char finalpath[][MAXLEN], double *returnArray);
 
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
 {
@@ -31,6 +31,12 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    int portC;
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = htons(24096);
     if ((rc = getaddrinfo(LOCALHOST, portnum, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", portnum);
@@ -42,6 +48,16 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
         fprintf(stderr, "socket() failed (port %s)\n", portnum);
         return -2;
     }
+    if (bind(socketfd, (struct sockaddr *)&sin, sizeof(struct sockaddr_in)) < 0)
+    {
+        fprintf(stderr, "bind() failed (port %s)\n", portnum);
+        return -2;
+    }
+    if (getsockname(socketfd, (struct sockaddr *)&sin, &len) == -1)
+        perror("getsockname");
+    else
+        portC = ntohs(sin.sin_port);
+
     /*send data to serverT*/
     if (sendto(socketfd, bufA, strlen(bufA), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
@@ -78,7 +94,7 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
         printf("empty path\n");
     }
 
-    printf("The Central server received information from Backend-Server T using UDP over port 24096.\n");
+    printf("The Central server received information from Backend-Server T using UDP over port %d.\n", portC);
     /*end receive data from serverT*/
     close(socketfd);
     return i;
@@ -94,6 +110,12 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    int portC;
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = htons(24096);
     if ((rc = getaddrinfo(LOCALHOST, portnum, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", portnum);
@@ -105,6 +127,15 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
         fprintf(stderr, "socket() failed (port %s)\n", portnum);
         return -2;
     }
+    if (bind(socketfd, (struct sockaddr *)&sin, sizeof(struct sockaddr_in)) < 0)
+    {
+        fprintf(stderr, "bind() failed (port %s)\n", portnum);
+        return -2;
+    }
+    if (getsockname(socketfd, (struct sockaddr *)&sin, &len) == -1)
+        perror("getsockname");
+    else
+        portC = ntohs(sin.sin_port);
     /*send edges to server S*/
     for (int i = 0; i < edgeInx; i++)
     {
@@ -145,13 +176,13 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
         printf("empty path\n");
     }
 
-    printf("The Central server received information from Backend-Server S using UDP over port 24096.\n");
+    printf("The Central server received information from Backend-Server S using UDP over port %d.\n", portC);
 
     close(socketfd);
     return scoresneededSize;
 }
 
-int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize, char *bufA, char *bufB)
+int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize, char *bufA, char *bufB, char finalpath[][MAXLEN], double *returnArray)
 {
     struct addrinfo hints;
     struct sockaddr_storage clientaddr;
@@ -161,6 +192,12 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    int portC;
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = htons(24096);
     if ((rc = getaddrinfo(LOCALHOST, portnum, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", portnum);
@@ -172,6 +209,15 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
         fprintf(stderr, "socket() failed (port %s)\n", portnum);
         return -2;
     }
+    if (bind(socketfd, (struct sockaddr *)&sin, sizeof(struct sockaddr_in)) < 0)
+    {
+        fprintf(stderr, "bind() failed (port %s)\n", portnum);
+        return -2;
+    }
+    if (getsockname(socketfd, (struct sockaddr *)&sin, &len) == -1)
+        perror("getsockname");
+    else
+        portC = ntohs(sin.sin_port);
     /*send edges to server P*/
     for (int i = 0; i < edgeInx; i++)
     {
@@ -223,31 +269,37 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     printf("The Central server sent a processing request to Backend-Server P.\n");
 
     /*receive data from server P*/
-    // int scoresneededSize = 0;
-    // while (1)
-    // {
-    //     if (recvfrom(socketfd, scoresneeded[scoresneededSize], sizeof(scoresneeded[scoresneededSize]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
-    //     {
-    //         fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
-    //         return -2;
-    //     }
-    //     if (strcmp(scoresneeded[scoresneededSize][0], "end") == 0)
-    //     {
-    //         break;
-    //     }
+    int finalpathSize = 0;
+    double finalScore;
+    while (1)
+    {
+        if (recvfrom(socketfd, finalpath[finalpathSize], sizeof(finalpath[finalpathSize]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
+        {
+            fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
+            return -2;
+        }
+        if (strcmp(finalpath[finalpathSize], "end") == 0)
+        {
+            break;
+        }
+        finalpathSize++;
+    }
+    if (finalpathSize == 0)
+    {
+        printf("empty path\n");
+    }
 
-    //     // printf("receive %s, %s\n", edges[i][0], edges[i][1]);
-    //     scoresneededSize++;
-    // }
-    // if (scoresneededSize == 0)
-    // {
-    //     printf("empty path\n");
-    // }
-
-    // printf("The Central server received information from Backend-Server S using UDP over port 24096.\n");
+    if (recvfrom(socketfd, &finalScore, sizeof(&finalScore), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
+    {
+        fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
+        return -2;
+    }
+    returnArray[0] = finalpathSize;
+    returnArray[1] = finalScore;
+    printf("The Central server received information from Backend-Server P using UDP over port %d.\n", portC);
 
     close(socketfd);
-    return scoresneededSize;
+    return finalpathSize;
 }
 int main(int argc, char **argv)
 {
@@ -285,11 +337,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "listen() failed (port %s)\n", TCPPORTA);
         return -2;
     }
-
+    int portA = 0;
     if (getsockname(socketfdA, (struct sockaddr *)&sin, &len) == -1)
         perror("getsockname");
     else
-        printf("port number %d\n", ntohs(sin.sin_port));
+        portA = ntohs(sin.sin_port);
     /*clientA end*/
 
     /*clientB*/
@@ -331,10 +383,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "listen() failed (port %s)\n", TCPPORTB);
         return -2;
     }
+    int portB = 0;
     if (getsockname(socketfdB, (struct sockaddr *)&sin, &len) == -1)
         perror("getsockname");
     else
-        printf("port number %d\n", ntohs(sin.sin_port));
+        portB = ntohs(sin.sin_port);
     /*clientB end*/
 
     printf("The Central server is up and running.\n");
@@ -369,7 +422,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("The Central server received input=\"%s\" from the client using TCP over port %s.\n", bufA, TCPPORTA);
+            printf("The Central server received input=\"%s\" from the client using TCP over port %d.\n", bufA, portA);
         }
         /*end receive A*/
 
@@ -381,7 +434,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("The Central server received input=\"%s\" from the client using TCP over port %s.\n", bufB, TCPPORTB);
+            printf("The Central server received input=\"%s\" from the client using TCP over port %d.\n", bufB, portB);
         }
         /*end receive B*/
 
@@ -402,9 +455,82 @@ int main(int argc, char **argv)
         /*end connect to serverS*/
 
         /*connect to serverP*/
-        clientP(UDPPORTP, edges, edgeInx, scoresneeded, scoresneededSize, bufA, bufB);
+        char finalpath[MAXLEN][MAXLEN];
+        double returnArray[2];
+        memset(finalpath, 0, sizeof(finalpath));
+        memset(returnArray, 0, sizeof(returnArray));
+        clientP(UDPPORTP, edges, edgeInx, scoresneeded, scoresneededSize, bufA, bufB, finalpath, returnArray);
         /*end connect to serverP*/
 
+        for (int i = 0; i < returnArray[0]; i++)
+        {
+            printf("receive %s\n", finalpath[i]);
+        }
+        printf("receive %.2f\n", returnArray[1]);
+        int finalpathLen = returnArray[0];
+
+        /*send clientA and B.*/
+        // check if there is a path
+        if (finalpathLen == 0)
+        {
+            printf("no path found\n");
+            // send A B's name
+            if (send(listenfdA, bufB, sizeof(bufB), 0) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTA);
+                return -2;
+            }
+            if (send(listenfdA, "end", sizeof("end"), 0) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTA);
+                return -2;
+            }
+            // send B A's name
+            if (send(listenfdB, bufA, sizeof(bufA), 0) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTB);
+                return -2;
+            }
+            if (send(listenfdB, "end", sizeof("end"), 0) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTB);
+                return -2;
+            }
+        }
+        else
+        {
+            char finalscore[MAXLEN];
+            memset(finalscore, 0, sizeof(finalscore));
+            sprintf(finalscore, "%f", returnArray[1]);
+            strcpy(finalpath[finalpathLen], finalscore);
+            finalpathLen++;
+            for (int i = 0; i < finalpathLen; i++)
+            {
+                if (send(listenfdA, finalpath[i], sizeof(finalpath[i]), 0) < 0)
+                {
+                    fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTA);
+                    return -2;
+                }
+            }
+            if (send(listenfdA, "end", sizeof("end"), 0) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTA);
+                return -2;
+            }
+            for (int i = 0; i < finalpathLen; i++)
+            {
+                if (send(listenfdB, finalpath[i], sizeof(finalpath[i]), 0) < 0)
+                {
+                    fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTB);
+                    return -2;
+                }
+            }
+            if (send(listenfdB, "end", sizeof("end"), 0) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTB);
+                return -2;
+            }
+        }
         memset(bufA, 0, sizeof(bufA));
         memset(bufB, 0, sizeof(bufB));
         close(listenfdA);
