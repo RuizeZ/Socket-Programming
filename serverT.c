@@ -87,7 +87,7 @@ int findEdge(char names[][MAXLEN], char edges[][2][MAXLEN], int *visited)
 
     /*find all edges that are associated with input name*/
     char queue[edgeInx * 2][MAXLEN];
-    memset(visited, 0, sizeof(visited));
+    memset(queue, 0, sizeof(queue));
     int queueSize = 0, queueInx = 0, visitedNum = 0;
     strcpy(queue[0], names[0]);
     queueSize++;
@@ -140,6 +140,7 @@ int main(int argc, char **argv)
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rc = getaddrinfo(LOCALHOST, UDPPORT, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORT);
@@ -150,6 +151,7 @@ int main(int argc, char **argv)
     {
         // printf("Create a socket descriptor\n");
         /* Create a socket descriptor */
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
         {
             fprintf(stderr, "socket() failed (port %s)\n", UDPPORT);
@@ -157,6 +159,7 @@ int main(int argc, char **argv)
         }
         // printf("Bind the descriptor to the port\n");
         /* Bind the descriptor to the port */
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (bind(socketfd, res->ai_addr, res->ai_addrlen) < 0)
         {
             fprintf(stderr, "bind() failed (port %s)\n", UDPPORT);
@@ -170,20 +173,23 @@ int main(int argc, char **argv)
         {
             portT = ntohs(sin.sin_port);
         }
-        printf("The serverS is up and running using UDP on port %d.\n", portT);
+        printf("The serverT is up and running using UDP on port %d.\n", portT);
         clientlen = sizeof(clientaddr);
 
         // printf("recvfrom the client\n");
         int namesInx = 0;
+        int num = 0;
         /*reveive names*/
         while (namesInx != 2)
         {
             char buf[MAXLEN] = "";
-            if (recvfrom(socketfd, buf, MAXLEN - 1, 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+            if (num = recvfrom(socketfd, buf, MAXLEN - 1, 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
             {
                 fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
                 return -2;
             }
+            // printf("recerice length: %d\n", num);
             strcpy(names[namesInx], buf);
             // printf("name is: %s\n", names[namesInx]);
             namesInx++;
@@ -193,13 +199,20 @@ int main(int argc, char **argv)
         /*find all edges*/
         char edges[MAXLEN][2][MAXLEN];
         int visited[MAXLEN];
+        memset(visited, 0, sizeof(visited));
         int edgeInx = findEdge(names, edges, visited);
         /*end find all edges*/
         /*send all edges back to central*/
+
         for (int i = 0; i < edgeInx; i++)
         {
+            // printf("visited %d\n", visited[i]);
             if (visited[i])
             {
+                for(int i = 0; i < 50000; i++){
+                    continue;
+                }
+                // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
                 if (sendto(socketfd, edges[i], sizeof(edges[i]), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
                 {
                     fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
@@ -209,6 +222,7 @@ int main(int argc, char **argv)
             }
         }
         char end[] = "end";
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (sendto(socketfd, end, sizeof(end), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
         {
             fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);

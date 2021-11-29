@@ -79,10 +79,10 @@ int findscore(char edges[][2][MAXLEN], char scoresneeded[][2][MAXLEN], int edgeI
         prevChar = (char)nextC;
     } while (nextC != EOF);
     /*end of reading file*/
-    // for (int i = 0; i < scoresSize; i++)
-    // {
-    //     printf("read %s, %s\n", scores[i][0], scores[i][1]);
-    // }
+    for (int i = 0; i < scoresSize; i++)
+    {
+        // printf("read %s, %s\n", scores[i][0], scores[i][1]);
+    }
     /*find all scores needed*/
     int selected[scoresSize];
     int scoresneededSize = 0;
@@ -90,8 +90,9 @@ int findscore(char edges[][2][MAXLEN], char scoresneeded[][2][MAXLEN], int edgeI
     memset(selected, 0, sizeof(selected));
     for (int i = 0; i < edgeInx; i++)
     {
+        // printf("current %s, %s\n", edges[i][0], edges[i][1]);
         int breakNum = 0;
-        for (int j = 0; i < scoresSize; j++)
+        for (int j = 0; j < scoresSize; j++)
         {
             /*find all score needed for each name*/
             /*if find first name*/
@@ -150,6 +151,7 @@ int main(int argc, char **argv)
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rc = getaddrinfo(LOCALHOST, UDPPORT, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORT);
@@ -158,12 +160,14 @@ int main(int argc, char **argv)
     while (1)
     {
         /* Create a socket descriptor */
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
         {
             fprintf(stderr, "socket() failed (port %s)\n", UDPPORT);
             return -2;
         }
         /* Bind the descriptor to the port */
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (bind(socketfd, res->ai_addr, res->ai_addrlen) < 0)
         {
             fprintf(stderr, "bind() failed (port %s)\n", UDPPORT);
@@ -183,37 +187,57 @@ int main(int argc, char **argv)
         clientlen = sizeof(clientaddr);
         char edges[MAXLEN][2][MAXLEN];
         int edgeInx = 0;
+        
+        int index = 0;
         while (1)
-        {
-            if (recvfrom(socketfd, edges[edgeInx], sizeof(edges[edgeInx]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+        {   
+            char currname[MAXLEN] = "";
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+            
+            if (recvfrom(socketfd, currname, MAXLEN - 1, 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
             {
                 fprintf(stderr, "recvfrom() failed (port %s)\n", UDPPORT);
                 return -2;
             }
-            if (strcmp(edges[edgeInx][0], "end") == 0)
+            // printf("receive name %s \n", currname);
+            if (strcmp(currname, "end") == 0)
             {
                 break;
             }
-            printf("receive %s, %s\n", edges[edgeInx][0], edges[edgeInx][1]);
-            edgeInx++;
+            
+            strcpy(edges[edgeInx][index], currname);
+            
+            index++;
+            if(index == 2){
+                // printf("receive %s, %s\n", edges[edgeInx][0], edges[edgeInx][1]);
+                edgeInx++;
+                index = 0;
+            }
+            
+
         }
         printf("The ServerS received a request from Central to get the topology.\n");
         /*end receive data*/
         /*find all needed score for names*/
         char scoresneeded[MAXLEN][2][MAXLEN];
         int scoresneededSize = findscore(edges, scoresneeded, edgeInx);
-        printf("1\n");
         /*end find all needed score for names*/
         /*send all edges back to central*/
         for (int i = 0; i < scoresneededSize; i++)
         {
+            for(int i = 0; i < 1000000; i++){
+                continue;
+            }
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (sendto(socketfd, scoresneeded[i], sizeof(scoresneeded[i]), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
             {
                 fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);
                 return -2;
             }
+            // printf("sent %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
         }
         char end[] = "end";
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (sendto(socketfd, end, sizeof(end), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
         {
             fprintf(stderr, "sendto() failed (port %s)\n", UDPPORT);

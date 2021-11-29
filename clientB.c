@@ -15,46 +15,47 @@
 int main(int argc, char **argv)
 {
     struct addrinfo hints;
-    struct sockaddr_storage clientaddr;
     struct addrinfo *res;
     int rc, clientfd;
-    socklen_t clientlen;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     char *msg;
     if (argc == 2)
     {
-        printf("input: %s\n", argv[1]);
+        // printf("input: %s\n", argv[1]);
         msg = argv[1];
-        printf("input: %s\n", msg);
+        // printf("input: %s\n", msg);
     }
-
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rc = getaddrinfo(LOCALHOST, CENTRALPORT, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", CENTRALPORT);
         return -2;
     }
     /* test the current IP */
-    struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
-    void *addr = &(ipv4->sin_addr);
-    char ipstr[INET_ADDRSTRLEN];
-    inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
-    printf("%s\n", ipstr);
+    // struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
+    // void *addr = &(ipv4->sin_addr);
+    // char ipstr[INET_ADDRSTRLEN];
+    // inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
+    // printf("%s\n", ipstr);
     /* Create a socket descriptor */
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((clientfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
     {
         fprintf(stderr, "socket() failed (port %s)\n", CENTRALPORT);
         return -2;
     }
     printf("The client is up and running.\n");
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (connect(clientfd, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "connect() failed (port %s)\n", CENTRALPORT);
         return -2;
     }
-    inet_ntop(res->ai_family, (struct sockaddr *)&clientaddr, ipstr, sizeof(ipstr));
-    printf("Connected with %s\n", ipstr);
+    // inet_ntop(res->ai_family, (struct sockaddr *)&clientaddr, ipstr, sizeof(ipstr));
+    // printf("Connected with %s\n", ipstr);
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (send(clientfd, msg, strlen(msg), 0) == -1)
     {
         fprintf(stderr, "send() failed (port %s)\n", CENTRALPORT);
@@ -63,11 +64,11 @@ int main(int argc, char **argv)
     /*receive result from central*/
     char finalPath[MAXLEN][MAXLEN];
     int finalPathSize = 0;
-    char finalscorechar[MAXLEN];
     char *eptr;
     double finalscore;
     while (1)
     {
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (recv(clientfd, finalPath[finalPathSize], sizeof(finalPath[finalPathSize]), 0) < 0)
         {
             fprintf(stderr, "recv() failed (port %s)\n", CENTRALPORT);
@@ -86,12 +87,13 @@ int main(int argc, char **argv)
     else
     {
         finalscore = strtod(finalPath[finalPathSize - 1], &eptr);
-        for (int i = 0; i < finalPathSize; i++)
-        {
-            printf("receive: %s\n", finalPath[i]);
-        }
+        // for (int i = 0; i < finalPathSize; i++)
+        // {
+        //     printf("receive: %s\n", finalPath[i]);
+        // }
         if (strcmp(finalPath[0], msg) == 0)
         {
+            printf("Found compatibility for %s and %s:\n", msg, finalPath[finalPathSize - 2]);
             for (int i = 0; i < finalPathSize - 1; i++)
             {
                 printf("%s", finalPath[i]);
@@ -107,6 +109,7 @@ int main(int argc, char **argv)
         }
         else
         {
+            printf("Found compatibility for %s and %s:\n", msg, finalPath[0]);
             for (int i = finalPathSize - 2; i >= 0; i--)
             {
                 printf("%s", finalPath[i]);

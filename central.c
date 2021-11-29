@@ -24,10 +24,8 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
 int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
 {
     struct addrinfo hints;
-    struct sockaddr_storage clientaddr;
     struct addrinfo *res;
     int rc, socketfd;
-    socklen_t clientlen;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
@@ -37,17 +35,20 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
     sin.sin_port = htons(24096);
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rc = getaddrinfo(LOCALHOST, portnum, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", portnum);
         return -2;
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     /* Create a socket descriptor */
     if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
     {
         fprintf(stderr, "socket() failed (port %s)\n", portnum);
         return -2;
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (bind(socketfd, (struct sockaddr *)&sin, sizeof(struct sockaddr_in)) < 0)
     {
         fprintf(stderr, "bind() failed (port %s)\n", portnum);
@@ -59,12 +60,14 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
         portC = ntohs(sin.sin_port);
 
     /*send data to serverT*/
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (sendto(socketfd, bufA, strlen(bufA), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
         return -2;
     }
     // printf("sent: %s\n", bufA);
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (sendto(socketfd, bufB, strlen(bufB), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
@@ -76,6 +79,7 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
     int i = 0;
     while (1)
     {
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (recvfrom(socketfd, edges[i], sizeof(edges[i]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
         {
             fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
@@ -89,10 +93,11 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
         // printf("receive %s, %s\n", edges[i][0], edges[i][1]);
         i++;
     }
-    if (i == 0)
-    {
-        printf("empty path\n");
-    }
+    // printf("***************************************************\n");
+    // if (i == 0)
+    // {
+    //     printf("empty path\n");
+    // }
 
     printf("The Central server received information from Backend-Server T using UDP over port %d.\n", portC);
     /*end receive data from serverT*/
@@ -103,10 +108,8 @@ int clientT(char *portnum, char *bufA, char *bufB, char edges[][2][MAXLEN])
 int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN])
 {
     struct addrinfo hints;
-    struct sockaddr_storage clientaddr;
     struct addrinfo *res;
     int rc, socketfd;
-    socklen_t clientlen;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
@@ -116,17 +119,20 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
     sin.sin_port = htons(24096);
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rc = getaddrinfo(LOCALHOST, portnum, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", portnum);
         return -2;
     }
     /* Create a socket descriptor */
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
     {
         fprintf(stderr, "socket() failed (port %s)\n", portnum);
         return -2;
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (bind(socketfd, (struct sockaddr *)&sin, sizeof(struct sockaddr_in)) < 0)
     {
         fprintf(stderr, "bind() failed (port %s)\n", portnum);
@@ -139,15 +145,24 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     /*send edges to server S*/
     for (int i = 0; i < edgeInx; i++)
     {
-        if (sendto(socketfd, edges[i], sizeof(edges[i]), 0, res->ai_addr, res->ai_addrlen) < 0)
-        {
-            fprintf(stderr, "sendto() failed (port %s)\n", portnum);
-            return -2;
+        int index = 0;
+        while(index != 2){
+            for(int i = 0; i < 50000; i++){
+                continue;
+            }
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+            if (sendto(socketfd, edges[i][index], strlen(edges[i][index]), 0, res->ai_addr, res->ai_addrlen) < 0)
+            {
+                fprintf(stderr, "sendto() failed (port %s)\n", portnum);
+                return -2;
+            }
+            index++;
         }
-        printf("sent %s, %s\n", edges[i][0], edges[i][1]);
+        // printf("sent %s, %s\n", edges[i][0], edges[i][1]);
     }
     char end[] = "end";
-    if (sendto(socketfd, end, sizeof(end), 0, res->ai_addr, res->ai_addrlen) < 0)
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+    if (sendto(socketfd, end, strlen(end), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "sendto() failed (port %s)\n", portnum);
         return -2;
@@ -158,6 +173,9 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     int scoresneededSize = 0;
     while (1)
     {
+        memset(scoresneeded[scoresneededSize][0],0,sizeof(scoresneeded[scoresneededSize][0]));
+        memset(scoresneeded[scoresneededSize][1],0,sizeof(scoresneeded[scoresneededSize][1]));        
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (recvfrom(socketfd, scoresneeded[scoresneededSize], sizeof(scoresneeded[scoresneededSize]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
         {
             fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
@@ -168,12 +186,13 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
             break;
         }
 
-        // printf("receive %s, %s\n", edges[i][0], edges[i][1]);
+        // printf("receive %s, %s\n", scoresneeded[scoresneededSize][0], scoresneeded[scoresneededSize][1]);
         scoresneededSize++;
     }
+    // printf("***************************************************\n");
     if (scoresneededSize == 0)
     {
-        printf("empty path\n");
+        // printf("empty path\n");
     }
 
     printf("The Central server received information from Backend-Server S using UDP over port %d.\n", portC);
@@ -185,49 +204,49 @@ int clientS(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
 int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLEN], int scoresneededSize, char *bufA, char *bufB, char finalpath[][MAXLEN], double *returnArray)
 {
     struct addrinfo hints;
-    struct sockaddr_storage clientaddr;
     struct addrinfo *res;
     int rc, socketfd;
-    socklen_t clientlen;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
     struct sockaddr_in sin;
-    socklen_t len = sizeof(sin);
-    int portC;
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
     sin.sin_port = htons(24096);
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rc = getaddrinfo(LOCALHOST, portnum, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", portnum);
         return -2;
     }
     /* Create a socket descriptor */
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
     {
         fprintf(stderr, "socket() failed (port %s)\n", portnum);
         return -2;
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (bind(socketfd, (struct sockaddr *)&sin, sizeof(struct sockaddr_in)) < 0)
     {
         fprintf(stderr, "bind() failed (port %s)\n", portnum);
         return -2;
     }
-    if (getsockname(socketfd, (struct sockaddr *)&sin, &len) == -1)
-        perror("getsockname");
-    else
-        portC = ntohs(sin.sin_port);
     /*send edges to server P*/
     for (int i = 0; i < edgeInx; i++)
     {
+        for(int i = 0; i < 50000; i++){
+                continue;
+        }
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (sendto(socketfd, edges[i], sizeof(edges[i]), 0, res->ai_addr, res->ai_addrlen) < 0)
         {
             fprintf(stderr, "sendto() failed (port %s)\n", portnum);
             return -2;
         }
-        printf("sent %s, %s\n", edges[i][0], edges[i][1]);
+        // printf("sent %s, %s\n", edges[i][0], edges[i][1]);
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     char end[] = "end";
     if (sendto(socketfd, end, sizeof(end), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
@@ -238,13 +257,15 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     /*send scores to server P*/
     for (int i = 0; i < scoresneededSize; i++)
     {
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (sendto(socketfd, scoresneeded[i], sizeof(scoresneeded[i]), 0, res->ai_addr, res->ai_addrlen) < 0)
         {
             fprintf(stderr, "sendto() failed (port %s)\n", portnum);
             return -2;
         }
-        printf("sent %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
+        // printf("sent %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (sendto(socketfd, end, sizeof(end), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "sendto() failed (port %s)\n", portnum);
@@ -252,18 +273,23 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     }
     /*end send edges to server P*/
     /*send input names to server P*/
-    if (sendto(socketfd, bufA, sizeof(bufA), 0, res->ai_addr, res->ai_addrlen) < 0)
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+    int num;
+    if (num = sendto(socketfd, bufA, strlen(bufA), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "sendto() failed (port %s)\n", portnum);
         return -2;
     }
-    printf("sent %s\n", bufA);
-    if (sendto(socketfd, bufB, sizeof(bufB), 0, res->ai_addr, res->ai_addrlen) < 0)
+    // printf("sizeof %ld\n", sizeof(bufA));
+    // printf("send length %ld\n", strlen(bufA));
+    // printf("sent %s\n", bufA);
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+    if (sendto(socketfd, bufB, strlen(bufB), 0, res->ai_addr, res->ai_addrlen) < 0)
     {
         fprintf(stderr, "sendto() failed (port %s)\n", portnum);
         return -2;
     }
-    printf("sent %s\n", bufB);
+    // printf("sent %s\n", bufB);
     /*end send input names to server P*/
 
     printf("The Central server sent a processing request to Backend-Server P.\n");
@@ -273,6 +299,7 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     double finalScore;
     while (1)
     {
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (recvfrom(socketfd, finalpath[finalpathSize], sizeof(finalpath[finalpathSize]), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
         {
             fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
@@ -286,9 +313,9 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     }
     if (finalpathSize == 0)
     {
-        printf("empty path\n");
+        // printf("empty path\n");
     }
-
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (recvfrom(socketfd, &finalScore, sizeof(&finalScore), 0, res->ai_addr, &(res->ai_addrlen)) < 0)
     {
         fprintf(stderr, "recvfrom() failed (port %s)\n", portnum);
@@ -296,7 +323,7 @@ int clientP(char *portnum, char edges[][2][MAXLEN], int edgeInx, char scoresneed
     }
     returnArray[0] = finalpathSize;
     returnArray[1] = finalScore;
-    printf("The Central server received information from Backend-Server P using UDP over port %d.\n", portC);
+    printf("The Central server received the results from backend server P.\n");
 
     close(socketfd);
     return finalpathSize;
@@ -316,22 +343,26 @@ int main(int argc, char **argv)
     hintsA.ai_family = AF_INET;
     hintsA.ai_socktype = SOCK_STREAM;
     int listenfdA;
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rcA = getaddrinfo(LOCALHOST, TCPPORTA, &hintsA, &resA)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", TCPPORTA);
         return -2;
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((socketfdA = socket(resA->ai_family, resA->ai_socktype, resA->ai_protocol)) < 0)
     {
         fprintf(stderr, "socket() failed (port %s)\n", TCPPORTA);
         return -2;
     }
     /* Bind the descriptor to the port */
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (bind(socketfdA, resA->ai_addr, resA->ai_addrlen) < 0)
     {
         fprintf(stderr, "bind() failed (port %s)\n", TCPPORTA);
         return -2;
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rcA = listen(socketfdA, 20)) < 0)
     {
         fprintf(stderr, "listen() failed (port %s)\n", TCPPORTA);
@@ -355,6 +386,7 @@ int main(int argc, char **argv)
     memset(&hintsB, 0, sizeof(hintsB));
     hintsB.ai_family = AF_INET;
     hintsB.ai_socktype = SOCK_STREAM;
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rcB = getaddrinfo(LOCALHOST, TCPPORTB, &hintsB, &resB)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", TCPPORTB);
@@ -365,19 +397,22 @@ int main(int argc, char **argv)
     void *addr = &(ipv4->sin_addr);
     char ipstr[INET_ADDRSTRLEN];
     inet_ntop(resA->ai_family, addr, ipstr, sizeof(ipstr));
-    printf("%s\n", ipstr);
+    // printf("%s\n", ipstr);
     /* Create a socket descriptor */
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((socketfdB = socket(resB->ai_family, resB->ai_socktype, resB->ai_protocol)) < 0)
     {
         fprintf(stderr, "socket() failed (port %s)\n", TCPPORTB);
         return -2;
     }
     /* Bind the descriptor to the port */
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if (bind(socketfdB, resB->ai_addr, resB->ai_addrlen) < 0)
     {
         fprintf(stderr, "bind() failed (port %s)\n", TCPPORTB);
         return -2;
     }
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rcB = listen(socketfdB, 20)) < 0)
     {
         fprintf(stderr, "listen() failed (port %s)\n", TCPPORTB);
@@ -390,21 +425,22 @@ int main(int argc, char **argv)
         portB = ntohs(sin.sin_port);
     /*clientB end*/
 
-    printf("The Central server is up and running.\n");
-
     /*start listen*/
     while (1)
     {
+        printf("The Central server is up and running.\n");
         int recvA, recvB;
         char bufA[MAXLEN] = "";
         char bufB[MAXLEN] = "";
         /*accept for A*/
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if ((listenfdA = accept(socketfdA, (struct sockaddr *)&clientaddrA, &clientlenA)) < 0)
         {
             fprintf(stderr, "listen() failed (port %s)\n", TCPPORTA);
             return -2;
         }
         /*accept for B*/
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if ((listenfdB = accept(socketfdB, (struct sockaddr *)&clientaddrB, &clientlenB)) < 0)
         {
             fprintf(stderr, "listen() failed (port %s)\n", TCPPORTB);
@@ -415,7 +451,8 @@ int main(int argc, char **argv)
         // printf("Get connected with %s\n", ipstr);
 
         /*receive A*/
-        if (recvA = recv(listenfdA, bufA, MAXLEN - 1, 0) < 0)
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+        if ((recvA = recv(listenfdA, bufA, MAXLEN - 1, 0)) < 0)
         {
             fprintf(stderr, "listen() failed (port %s)\n", TCPPORTA);
             return -2;
@@ -427,7 +464,8 @@ int main(int argc, char **argv)
         /*end receive A*/
 
         /*receive B*/
-        if (recvB = recv(listenfdB, bufB, MAXLEN - 1, 0) < 0)
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+        if ((recvB = recv(listenfdB, bufB, MAXLEN - 1, 0)) < 0)
         {
             fprintf(stderr, "listen() failed (port %s)\n", TCPPORTB);
             return -2;
@@ -441,17 +479,17 @@ int main(int argc, char **argv)
         /*connect to serverT*/
         char edges[MAXLEN][2][MAXLEN];
         int edgeInx = clientT(UDPPORTT, bufA, bufB, edges);
-        for (int i = 0; i < edgeInx; i++)
-        {
-            printf("receive %s, %s\n", edges[i][0], edges[i][1]);
-        }
+        // for (int i = 0; i < edgeInx; i++)
+        // {
+        //     printf("receive %s, %s\n", edges[i][0], edges[i][1]);
+        // }
         /*connect to serverS*/
         char scoresneeded[MAXLEN][2][MAXLEN];
         int scoresneededSize = clientS(UDPPORTS, edges, edgeInx, scoresneeded);
-        for (int i = 0; i < scoresneededSize; i++)
-        {
-            printf("receive %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
-        }
+        // for (int i = 0; i < scoresneededSize; i++)
+        // {
+        //     printf("receive %s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
+        // }
         /*end connect to serverS*/
 
         /*connect to serverP*/
@@ -462,40 +500,47 @@ int main(int argc, char **argv)
         clientP(UDPPORTP, edges, edgeInx, scoresneeded, scoresneededSize, bufA, bufB, finalpath, returnArray);
         /*end connect to serverP*/
 
-        for (int i = 0; i < returnArray[0]; i++)
-        {
-            printf("receive %s\n", finalpath[i]);
-        }
-        printf("receive %.2f\n", returnArray[1]);
+        // for (int i = 0; i < returnArray[0]; i++)
+        // {
+        //     printf("receive %s\n", finalpath[i]);
+        // }
+        // printf("receive %.2f\n", returnArray[1]);
         int finalpathLen = returnArray[0];
 
         /*send clientA and B.*/
-        // check if there is a path
+        // check if there is no path found
         if (finalpathLen == 0)
         {
-            printf("no path found\n");
+            // printf("no path found\n");
             // send A B's name
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (send(listenfdA, bufB, sizeof(bufB), 0) < 0)
             {
                 fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTA);
                 return -2;
             }
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (send(listenfdA, "end", sizeof("end"), 0) < 0)
             {
                 fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTA);
                 return -2;
             }
+            printf("The Central server sent the results to client A.\n");
+
             // send B A's name
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (send(listenfdB, bufA, sizeof(bufA), 0) < 0)
             {
                 fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTB);
                 return -2;
             }
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (send(listenfdB, "end", sizeof("end"), 0) < 0)
             {
                 fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTB);
                 return -2;
             }
+            printf("The Central server sent the results to client B.\n");
         }
         else
         {
@@ -506,30 +551,36 @@ int main(int argc, char **argv)
             finalpathLen++;
             for (int i = 0; i < finalpathLen; i++)
             {
+                // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
                 if (send(listenfdA, finalpath[i], sizeof(finalpath[i]), 0) < 0)
                 {
                     fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTA);
                     return -2;
                 }
             }
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (send(listenfdA, "end", sizeof("end"), 0) < 0)
             {
                 fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTA);
                 return -2;
             }
+            printf("The Central server sent the results to client A.\n");
             for (int i = 0; i < finalpathLen; i++)
             {
+                // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
                 if (send(listenfdB, finalpath[i], sizeof(finalpath[i]), 0) < 0)
                 {
                     fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTB);
                     return -2;
                 }
             }
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (send(listenfdB, "end", sizeof("end"), 0) < 0)
             {
                 fprintf(stderr, "sendto() failed (port %s)\n", TCPPORTB);
                 return -2;
             }
+            printf("The Central server sent the results to client B.\n");
         }
         memset(bufA, 0, sizeof(bufA));
         memset(bufB, 0, sizeof(bufB));
@@ -538,4 +589,6 @@ int main(int argc, char **argv)
         /* end connect to serverT*/
     }
     /*end listen*/
+    close(socketfdA);
+    close(socketfdB);
 }

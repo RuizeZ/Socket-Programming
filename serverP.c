@@ -38,7 +38,7 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
     char queue[edgeInx * 2][MAXLEN];
     int visited[scoresneededsize];
     memset(visited, 0, sizeof(visited));
-    int queueSize = 0, queueInx = 0, visitedNum = 0;
+    int queueSize = 0;
     strcpy(queue[0], inputname1);
     queueSize++;
     /*Create adjacency matrix adj[ ][ ]. If i and j are connected, adj[i][j] = adj[j][i] = 1, otherwise, 0*/
@@ -56,6 +56,8 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
     for (int i = 0; i < edgeInx; i++)
     {
         char name1[MAXLEN], name2[MAXLEN];
+        memset(name1, 0, sizeof(name1));
+        memset(name2, 0, sizeof(name2));
         int name1index, name2index;
         strcpy(name1, edges[i][0]);
         name1index = findnameindex(scoresneeded, scoresneededsize, name1);
@@ -63,7 +65,9 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
         name2index = findnameindex(scoresneeded, scoresneededsize, name2);
         if (name1index == -1 || name2index == -1)
         {
-            printf("name is not in the array\n");
+            // printf("name1: %s\n", name1);
+            // printf("name2: %s\n", name2);
+            // printf("name is not in the array\n");
             return;
         }
         // Update value to 1
@@ -86,6 +90,8 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
     double cost[scoresneededsize][scoresneededsize];
     int startnode = -1;
     char startname[MAXLEN], endname[MAXLEN];
+    memset(startname, 0, sizeof(startname));
+    memset(endname, 0, sizeof(endname));
     for (int i = 0; i < scoresneededsize; i++)
     {
         if (strcmp(scoresneeded[i][0], inputname1) == 0 || strcmp(scoresneeded[i][0], inputname2) == 0)
@@ -149,12 +155,12 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
     }
     distance[startnode] = 0;
     /*end create distance[i]*/
-    for (int i = 0; i < scoresneededsize; i++)
-    {
+    // for (int i = 0; i < scoresneededsize; i++)
+    // {
 
-        printf("%f ", distance[i]);
-    }
-    printf("\n");
+    //     printf("%f ", distance[i]);
+    // }
+    // printf("\n");
 
     /*create prevnode[], prevneode[i] means the prevnode of ith node on the shortest path*/
     int prevnode[scoresneededsize];
@@ -196,6 +202,7 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
         /*check if we find the endname*/
         if (strcmp(scoresneeded[minInx][0], endname) == 0)
         {
+            // printf("find path\n");
             /*create finalPath*/
             int finalpathInx = 0;
             strcpy(finalpath[finalpathInx], endname);
@@ -232,7 +239,7 @@ void dijkstra(char edges[][2][MAXLEN], int edgeInx, char scoresneeded[][2][MAXLE
         }
         /*end update the distance[i]*/
     }
-    printf("no path found\n");
+    // printf("no path found\n");
 }
 
 int main(int argc, char **argv)
@@ -248,6 +255,7 @@ int main(int argc, char **argv)
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
+    // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
     if ((rc = getaddrinfo(LOCALHOST, UDPPORP, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo failed (port %s)\n", UDPPORP);
@@ -256,12 +264,14 @@ int main(int argc, char **argv)
     while (1)
     {
         /* Create a socket descriptor */
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if ((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
         {
             fprintf(stderr, "socket() failed (port %s)\n", UDPPORP);
             return -2;
         }
         /* Bind the descriptor to the port */
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (bind(socketfd, res->ai_addr, res->ai_addrlen) < 0)
         {
             fprintf(stderr, "bind() failed (port %s)\n", UDPPORP);
@@ -275,13 +285,14 @@ int main(int argc, char **argv)
         {
             portP = ntohs(sin.sin_port);
         }
-        printf("The serverS is up and running using UDP on port %d.\n", portP);
+        printf("The serverP is up and running using UDP on port %d.\n", portP);
         /*receive edges from client*/
         clientlen = sizeof(clientaddr);
         char edges[MAXLEN][2][MAXLEN];
         int edgeInx = 0;
         while (1)
         {
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (recvfrom(socketfd, edges[edgeInx], sizeof(edges[edgeInx]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
             {
                 fprintf(stderr, "recvfrom() failed (port %d)\n", portP);
@@ -291,7 +302,7 @@ int main(int argc, char **argv)
             {
                 break;
             }
-            printf("receive %s, %s\n", edges[edgeInx][0], edges[edgeInx][1]);
+            // printf("receive %s, %s\n", edges[edgeInx][0], edges[edgeInx][1]);
             edgeInx++;
         }
         /*end receive edges*/
@@ -301,6 +312,7 @@ int main(int argc, char **argv)
         int scoresneededsize = 0;
         while (1)
         {
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (recvfrom(socketfd, scoresneeded[scoresneededsize], sizeof(scoresneeded[scoresneededsize]), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
             {
                 fprintf(stderr, "recvfrom() failed (port %d)\n", portP);
@@ -310,66 +322,85 @@ int main(int argc, char **argv)
             {
                 break;
             }
-            printf("receive %s, %s\n", scoresneeded[scoresneededsize][0], scoresneeded[scoresneededsize][1]);
+            // printf("receive %s, %s\n", scoresneeded[scoresneededsize][0], scoresneeded[scoresneededsize][1]);
             scoresneededsize++;
         }
         /*end receive scores from client*/
 
         /*receive input names from client*/
-        char inputname1[MAXLEN];
-        char inputname2[MAXLEN];
-        if (recvfrom(socketfd, inputname1, sizeof(inputname1), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+        char inputname1[MAXLEN] = "";
+        char inputname2[MAXLEN] = "";
+        int num;
+        // printf("receive name1 %s\n", inputname1);
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+        if (num = recvfrom(socketfd, inputname1, MAXLEN - 1, 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
         {
             fprintf(stderr, "recvfrom() failed (port %d)\n", portP);
             return -2;
         }
-        printf("receive name1 %s\n", inputname1);
-        if (recvfrom(socketfd, inputname2, sizeof(inputname2), 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
+        // printf("recerice length: %d\n", num);
+        // printf("receive name1 %s\n", inputname1);
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
+        if (recvfrom(socketfd, inputname2, MAXLEN - 1, 0, (struct sockaddr *)&clientaddr, &clientlen) < 0)
         {
             fprintf(stderr, "recvfrom() failed (port %d)\n", portP);
             return -2;
         }
-        printf("receive name2 %s\n", inputname2);
+        // printf("receive name2 %s\n", inputname2);
         /*end receive input names from client*/
-        printf("The ServerP received a request from Central to get the topology.\n");
+        printf("The ServerP received the topology and score information.\n");
         char finalpath[MAXLEN][MAXLEN];
         memset(finalpath, 0, sizeof(finalpath));
-        double returnArray[2], minValue;
+        double returnArray[2];
         memset(returnArray, 0, sizeof(returnArray));
         int finalpathInx;
+        // for (int i = 0; i < edgeInx; i++)
+        // {
+        //     printf("%s, %s\n", edges[i][0], edges[i][1]);
+        // }
+        // for (int i = 0; i < scoresneededsize; i++)
+        // {
+        //     printf("%s, %s\n", scoresneeded[i][0], scoresneeded[i][1]);
+        // }
         dijkstra(edges, edgeInx, scoresneeded, scoresneededsize, inputname1, inputname2, finalpath, returnArray);
         finalpathInx = returnArray[0];
-        minValue = returnArray[1];
-        for (int i = 0; i < finalpathInx; i++)
-        {
-            printf("%s\n", finalpath[i]);
-        }
-        printf("min cost = %.2f\n", minValue);
+        // for (int i = 0; i < finalpathInx; i++)
+        // {
+        //     printf("%s\n", finalpath[i]);
+        // }
+        // printf("min cost = %.2f\n", minValue);
         // inet_ntop(res->ai_family, (struct sockaddr *)&clientaddr, ipstr, sizeof(ipstr));
         // printf("Get connected with %s\n", ipstr);
 
         /*send all edges back to central*/
         for (int i = 0; i < finalpathInx; i++)
         {
+            for(int i = 0; i < 50000; i++){
+                continue;
+            }
+            // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
             if (sendto(socketfd, finalpath[i], sizeof(finalpath[i]), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
             {
                 fprintf(stderr, "sendto() failed (port %d)\n", portP);
                 return -2;
             }
-            printf("sent %s\n", finalpath[i]);
+            // printf("sent %s\n", finalpath[i]);
         }
         char end[] = "end";
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (sendto(socketfd, end, sizeof(end), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
         {
             fprintf(stderr, "sendto() failed (port %d)\n", portP);
             return -2;
         }
+        // function from "Beej’s Guide to Network ProgrammingUsing Internet Sockets"
         if (sendto(socketfd, returnArray + 1, sizeof(returnArray + 1), 0, (struct sockaddr *)&clientaddr, clientlen) < 0)
         {
             fprintf(stderr, "sendto() failed (port %d)\n", portP);
             return -2;
         }
-        printf("sent %.2f\n", *(returnArray + 1));
+        printf("The ServerP finished sending the results to the Central.\n");
+        // printf("sent %.2f\n", *(returnArray + 1));
         /*end send all edges back to central*/
         close(socketfd);
     }
