@@ -1,5 +1,3 @@
-Name: Ruize Zhang
-Student ID: 5423040069
 In this project, I have done phases from Phase1 to Phase3 without Phase4.
 clientA: send name to central and wait for result sent back from central
 clientB: send name to central and wait for result sent back from central
